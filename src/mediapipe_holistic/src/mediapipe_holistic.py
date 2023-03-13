@@ -197,6 +197,7 @@ if __name__ == '__main__':
                      print("position of tip of ring finger is:",ring_tip)
                      time.sleep(0.05)
                      print("position of tip of pinky finger is:",pinky_tip)
+                     "LOLOLOLOL"
                 except:
                        print("nothing to print")
                 # user_choice=input("Arm angles or hand gestures?(A or B):")
