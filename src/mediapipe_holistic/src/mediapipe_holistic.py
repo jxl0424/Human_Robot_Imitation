@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from mediapipe_holistic_ros.msg import  MediaPipeHolistic
 from mediapipe_holistic_ros.msg  import  MediaPipePose
+import time 
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -181,18 +182,26 @@ if __name__ == '__main__':
                 image = apply_landmark(image, results)  
                 pub_results(results)
                 
-                try:
-                	landmarks = results.pose_landmarks.landmark
-                	shoulder = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].y]
-                	elbow = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].y]
-                	wrist = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].y]
-                	angle = calculate_angle(shoulder,elbow,wrist)
-                	print("The angle of elbow is: " , angle)
-                except:
-                	print("Hand Pose Not Found")        
-		
-                
-   
-                
+                user_choice=input("Arm angles or hand gestures?(A or B):")
+                if user_choice == "A" or "a":
+                        try:
+                                landmarks = results.pose_landmarks.landmark
+                                shoulder = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].y]
+                                elbow = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].y]
+                                wrist = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].y]
+                                hip = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].y] 
+                                index = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].y] 
+                                elbow_angle = calculate_angle(shoulder,elbow,wrist)    
+                                shoulder_angle = calculate_angle(hip,shoulder,elbow)
+                                wrist_angle = calculate_angle(elbow,wrist,index)            	
+                                print("The angle of elbow is: " , elbow_angle)
+                                time.sleep(0.05)
+                                print("The angle of shoulder is: " , shoulder_angle)
+                                time.sleep(0.05)
+                                print("The angle of wrist is: " , wrist_angle)		        	
+                        except:
+                                print("Angle Not Found")        
+
+                        
                 
                 
