@@ -183,9 +183,22 @@ if __name__ == '__main__':
                 pub_results(results)
                 try:
                      hand_landmarks = results.left_hand_landmarks.landmark
-                     print(hand_landmarks)
+                     thumb_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     index_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     middle_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     ring_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     pinky_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     print("position of tip of thumb finger is:",thumb_tip)
+                     time.sleep(0.05)
+                     print("position of tip of index finger is:",index_tip)
+                     time.sleep(0.05)
+                     print("position of tip of middle finger is:",middle_tip)
+                     time.sleep(0.05)
+                     print("position of tip of ring finger is:",ring_tip)
+                     time.sleep(0.05)
+                     print("position of tip of pinky finger is:",pinky_tip)
                 except:
-                       continue
+                       print("nothing to print")
                 # user_choice=input("Arm angles or hand gestures?(A or B):")
                 # if user_choice == "A" or "a":
                 #         try:
