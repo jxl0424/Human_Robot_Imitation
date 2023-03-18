@@ -10,6 +10,10 @@ from cv_bridge import CvBridge
 from mediapipe_holistic_ros.msg import  MediaPipeHolistic
 from mediapipe_holistic_ros.msg  import  MediaPipePose
 import time 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt 
+import PIL
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -24,9 +28,6 @@ pub_landmark_output = rospy.get_param("/mediapipe_holistic_ros/pub_landmark_outp
 pub_image_output = rospy.get_param("/mediapipe_holistic_ros/pub_image_output",True)
 view_image = rospy.get_param("/mediapipe_holistic_ros/open_view_image",True)
 #####
-
-def shut_down():
-        print("ROS shutting down safely")
 
 def apply_landmark(image, results):     
         if (pub_image_output == True or view_image == True):
@@ -137,7 +138,7 @@ def pub_results(results):
                                                         
                 publisher_output_mediapipe.publish(landmarks) 
 
-def calculate_angle(a,b,c):
+def calculate_angle_pose(a,b,c):
     a = np.array(a) # First
     b = np.array(b) # Mid
     c = np.array(c) # End
@@ -149,10 +150,32 @@ def calculate_angle(a,b,c):
         angle = 360-angle
         
     return angle 
-    
+ 
+def calculate_angle_hand(results,joint_list):
+        hand_landmark = results
+        angles =[]
+        for joint in joint_list:
+                a = np.array([hand_landmark[joint[0]].x, hand_landmark[joint[0]].y]) # First coord
+                b = np.array([hand_landmark[joint[1]].x, hand_landmark[joint[1]].y]) # Second coord
+                c = np.array([hand_landmark[joint[2]].x, hand_landmark[joint[2]].y]) # Third coord
+                radians = np.arctan2(c[1] - b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+                angle = np.abs(radians*180.0/np.pi)
+            
+                if angle > 180.0:                
+                        angle = 360-angle
+                        
+                angles.append(angle)  
+                      
+        return angles 
+                 
+def data_plot(data_angles):
+        plt.plot(data_angles)
+        plt.ylabel('angles')
+        plt.savefig('/home/ros/Human-Robot-Imitation/src/mediapipe_holistic_ros/mediapipe_holistic_ros/Angles/hand-angles.png')	
+
 if __name__ == '__main__':
-        rospy.init_node('MediaPiPeHolistic')
-        
+        rospy.init_node('MediaPiPeHolistic')        
+      
         #Global Topics
         bridge = CvBridge()
         
@@ -182,33 +205,47 @@ if __name__ == '__main__':
                 image = apply_landmark(image, results)  
                 pub_results(results)
                 try:
+                     joint_list = [[6,5,0],[12,9,0],[16,13,0],[18,17,0]]    
+                     #joint_list = [[6,5,0]]          
                      hand_landmarks = results.left_hand_landmarks.landmark
-                     thumb_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     index_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     middle_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     ring_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     pinky_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     print("position of tip of thumb finger is:",thumb_tip)
-                     time.sleep(0.05)
-                     print("position of tip of index finger is:",index_tip)
-                     time.sleep(0.05)
-                     print("position of tip of middle finger is:",middle_tip)
-                     time.sleep(0.05)
-                     print("position of tip of ring finger is:",ring_tip)
-                     time.sleep(0.05)
-                     print("position of tip of pinky finger is:",pinky_tip)
-                     "LOLOLOLOL"
+                     thumb_tip = [hand_landmarks[8].y]
+                     #index_tip = [hand_landmarks[mp_holistic.HandLandmark.INDEX_FINGER_TIP].y]
+                     #middle_tip = [hand_landmarks[mp_holistic.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     #ring_tip = [hand_landmarks[mp_holistic.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     #pinky_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
+                     
+                     for i, joints in enumerate(joint_list):
+                             hand_angles = calculate_angle_hand(hand_landmarks,joint_list)                     	
+                             #print(hand_angles)
+                             #data_plot(hand_landmark)                    	
+                             data_plot(hand_angles)
+                             #print(data_angle)
+                             #plt.show()
+                             #plt.plot(data_angle)
+                             #plt.show()
+                             #print("hand angles",i," are: ", hand_angles)
+
+                     
+                     #print("position of tip of thumb finger is:",thumb_tip)
+                     #time.sleep(0.05)
+                     #print("position of tip of index finger is:",index_tip)
+                     #time.sleep(0.05)
+                     #print("position of tip of middle finger is:",middle_tip)
+                     #time.sleep(0.05)
+                     #print("position of tip of ring finger is:",ring_tip)
+                     #time.sleep(0.05)
+                     #print("position of tip of pinky finger is:",pinky_tip)
                 except:
-                       print("nothing to print")
+                       print("Fingers Not Found")
                 # user_choice=input("Arm angles or hand gestures?(A or B):")
                 # if user_choice == "A" or "a":
                 #         try:
-                #                 landmarks = results.pose_landmarks.landmark
-                #                 shoulder = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].y]
-                #                 elbow = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].y]
-                #                 wrist = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].y]
-                #                 hip = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].y] 
-                #                 index = [landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].y] 
+                #                 pose_landmarks = results.pose_landmarks.landmark
+                #                 shoulder = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].y]
+                #                 elbow = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].y]
+                #                 wrist = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].y]
+                #                 hip = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].y] 
+                #                 index = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].y] 
                 #                 elbow_angle = calculate_angle(shoulder,elbow,wrist)    
                 #                 shoulder_angle = calculate_angle(hip,shoulder,elbow)
                 #                 wrist_angle = calculate_angle(elbow,wrist,index)            	
