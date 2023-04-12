@@ -13,7 +13,9 @@ import time
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt 
-import PIL
+import joblib
+import pickle
+import os.path
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -34,31 +36,14 @@ def apply_landmark(image, results):
                 # Draw landmark annotation on the image.
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                #mp_drawing.draw_landmarks(
-                        #image,
-                        #results.face_landmarks,
-                        #mp_holistic.FACEMESH_CONTOURS,
-                        #landmark_drawing_spec=None,
-                        #connection_drawing_spec=mp_drawing_styles
-                        #.get_default_face_mesh_contours_style())
-                # mp_drawing.draw_landmarks(
-                #         image,
-                #         results.pose_landmarks,
-                #         mp_holistic.POSE_CONNECTIONS,
-                #         landmark_drawing_spec=mp_drawing_styles
-                #         .get_default_pose_landmarks_style())
+                mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_holistic.POSE_CONNECTIONS, landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
                 #mp_drawing.draw_landmarks(
                         #image,
                         #results.right_hand_landmarks,
                         #mp_hands.HAND_CONNECTIONS,
                         #mp_drawing_styles.get_default_hand_landmarks_style(),
                         #mp_drawing_styles.get_default_hand_connections_style())       
-                mp_drawing.draw_landmarks(
-                        image,
-                        results.left_hand_landmarks,
-                        mp_hands.HAND_CONNECTIONS,
-                        mp_drawing_styles.get_default_hand_landmarks_style(),
-                        mp_drawing_styles.get_default_hand_connections_style())
+                mp_drawing.draw_landmarks(image, results.left_hand_landmarks,mp_hands.HAND_CONNECTIONS, mp_drawing_styles.get_default_hand_landmarks_style(), mp_drawing_styles.get_default_hand_connections_style())
                         
         if (pub_image_output == True):
                 image_message = bridge.cv2_to_imgmsg(image, encoding="passthrough")
@@ -141,32 +126,25 @@ def pub_results(results):
 def calculate_angle_pose(a,b,c):
     a = np.array(a) # First
     b = np.array(b) # Mid
-    c = np.array(c) # End
-    
+    c = np.array(c) # End    
     radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-    angle = np.abs(radians*180.0/np.pi)
-    
-    if angle >180.0:
-        angle = 360-angle
-        
-    return angle 
+
+    return radians 
  
 def calculate_angle_hand(results,joint_list):
         hand_landmark = results
-        angles =[]
+        angle_degree = []
         for joint in joint_list:
                 a = np.array([hand_landmark[joint[0]].x, hand_landmark[joint[0]].y]) # First coord
                 b = np.array([hand_landmark[joint[1]].x, hand_landmark[joint[1]].y]) # Second coord
                 c = np.array([hand_landmark[joint[2]].x, hand_landmark[joint[2]].y]) # Third coord
                 radians = np.arctan2(c[1] - b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
                 angle = np.abs(radians*180.0/np.pi)
-            
-                if angle > 180.0:                
-                        angle = 360-angle
-                        
-                angles.append(angle)  
-                      
-        return angles 
+                if angle > 180:
+                    angle = 360-angle                    
+                angle_degree.append(angle)
+                
+        return angle_degree 
                  
 def data_plot(data_angles):
         plt.plot(data_angles)
@@ -183,80 +161,54 @@ if __name__ == '__main__':
         publisher_output_image = rospy.Publisher(output_image_topic, Image)
         publisher_output_mediapipe = rospy.Publisher(output_mediapipe_topic, MediaPipeHolistic)
         
-        with mp_holistic.Holistic(
-            enable_segmentation=True,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5) as holistic:
-          while not rospy.is_shutdown():
+        with mp_holistic.Holistic(enable_segmentation=True,min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
+                data_set_pose = []
+                data_set_hand = []
+                hand_angles_avg =[]
+                while not rospy.is_shutdown():
           
-                try:
-                        data = rospy.wait_for_message(input_usb_cam_topic, Image, timeout=10)
-                        image = bridge.imgmsg_to_cv2(data, desired_encoding='bgra8')
-                except:
-                        print("Image read error")
-                        continue                
-                
-                #apply holistic
-                image.flags.writeable = False
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                results = holistic.process(image)
-                
-                #apply landmark                                      
-                image = apply_landmark(image, results)  
-                pub_results(results)
-                try:
-                     joint_list = [[6,5,0],[12,9,0],[16,13,0],[18,17,0]]    
-                     #joint_list = [[6,5,0]]          
-                     hand_landmarks = results.left_hand_landmarks.landmark
-                     thumb_tip = [hand_landmarks[8].y]
-                     #index_tip = [hand_landmarks[mp_holistic.HandLandmark.INDEX_FINGER_TIP].y]
-                     #middle_tip = [hand_landmarks[mp_holistic.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     #ring_tip = [hand_landmarks[mp_holistic.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     #pinky_tip = [hand_landmarks[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP].y]
-                     
-                     for i, joints in enumerate(joint_list):
-                             hand_angles = calculate_angle_hand(hand_landmarks,joint_list)                     	
-                             #print(hand_angles)
-                             #data_plot(hand_landmark)                    	
-                             data_plot(hand_angles)
-                             #print(data_angle)
-                             #plt.show()
-                             #plt.plot(data_angle)
-                             #plt.show()
-                             #print("hand angles",i," are: ", hand_angles)
-
-                     
-                     #print("position of tip of thumb finger is:",thumb_tip)
-                     #time.sleep(0.05)
-                     #print("position of tip of index finger is:",index_tip)
-                     #time.sleep(0.05)
-                     #print("position of tip of middle finger is:",middle_tip)
-                     #time.sleep(0.05)
-                     #print("position of tip of ring finger is:",ring_tip)
-                     #time.sleep(0.05)
-                     #print("position of tip of pinky finger is:",pinky_tip)
-                except:
-                       print("Fingers Not Found")
-                # user_choice=input("Arm angles or hand gestures?(A or B):")
-                # if user_choice == "A" or "a":
-                #         try:
-                #                 pose_landmarks = results.pose_landmarks.landmark
-                #                 shoulder = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_SHOULDER].y]
-                #                 elbow = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_ELBOW].y]
-                #                 wrist = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_WRIST].y]
-                #                 hip = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_HIP].y] 
-                #                 index = [pose_landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].x,landmarks[mp.solutions.holistic.PoseLandmark.RIGHT_INDEX].y] 
-                #                 elbow_angle = calculate_angle(shoulder,elbow,wrist)    
-                #                 shoulder_angle = calculate_angle(hip,shoulder,elbow)
-                #                 wrist_angle = calculate_angle(elbow,wrist,index)            	
-                #                 print("The angle of elbow is: " , elbow_angle)
-                #                 time.sleep(0.05)
-                #                 print("The angle of shoulder is: " , shoulder_angle)
-                #                 time.sleep(0.05)
-                #                 print("The angle of wrist is: " , wrist_angle)		        	
-                #         except:
-                #                 print("Angle Not Found")        
-
+                        try:
+                                data = rospy.wait_for_message(input_usb_cam_topic, Image, timeout=10)
+                                image = bridge.imgmsg_to_cv2(data, desired_encoding='bgra8')
+                        except:
+                                print("Image read error")
+                                continue                
                         
-                
+                        #apply holistic
+                        image.flags.writeable = False
+                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                        results = holistic.process(image)
+                        
+                        #apply landmark                                      
+                        image = apply_landmark(image, results)  
+                        pub_results(results)
+
+                        try:
+                                joint_list = [[8,5,0],[12,9,0],[16,13,0],[20,17,0]]             
+                                hand_landmarks = results.left_hand_landmarks.landmark                                                                 
+                                hand_angles = calculate_angle_hand(hand_landmarks,joint_list)
+                                data_set_hand.append(hand_angles)
+                                hand_angles_avg = np.average(data_set_hand,axis = 0)
+                                print('hand angles: ', hand_angles)
+                        except:
+                                print("Fingers Not Found")
+                                                       
+                        try:
+                                pose_landmarks = results.pose_landmarks.landmark
+                                shoulder = [pose_landmarks[12].x,pose_landmarks[12].y]
+                                elbow = [pose_landmarks[14].x,pose_landmarks[14].y]
+                                wrist = [pose_landmarks[16].x,pose_landmarks[16].y]
+                                hip = [pose_landmarks[24].x,pose_landmarks[24].y] 
+                                index = [pose_landmarks[20].x,pose_landmarks[20].y]
+                                elbow_angle = calculate_angle_pose(shoulder,elbow,wrist)    
+                                shoulder_angle = calculate_angle_pose(hip,shoulder,elbow)
+                                wrist_angle = calculate_angle_pose(elbow,wrist,index)
+                                pose_angles = [elbow_angle, shoulder_angle, wrist_angle] 
+                                data_set_pose.append(pose_angles)
+                                print('pose angles: ', pose_angles)           		        	
+                        except:
+                                print("Angle Not Found")        
+
+                                
+                        
                 
