@@ -9,6 +9,7 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from mediapipe_holistic_ros.msg import  MediaPipeHolistic
 from mediapipe_holistic_ros.msg  import  MediaPipePose
+import calUtils
 import time 
 import matplotlib
 matplotlib.use('Agg')
@@ -123,34 +124,6 @@ def pub_results(results):
                                                         
                 publisher_output_mediapipe.publish(landmarks) 
 
-def calculate_angle_pose(a,b,c):
-    a = np.array(a) # First
-    b = np.array(b) # Mid
-    c = np.array(c) # End    
-    radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-
-    return radians 
- 
-def calculate_angle_hand(results,joint_list):
-        hand_landmark = results
-        angle_degree = []
-        for joint in joint_list:
-                a = np.array([hand_landmark[joint[0]].x, hand_landmark[joint[0]].y]) # First coord
-                b = np.array([hand_landmark[joint[1]].x, hand_landmark[joint[1]].y]) # Second coord
-                c = np.array([hand_landmark[joint[2]].x, hand_landmark[joint[2]].y]) # Third coord
-                radians = np.arctan2(c[1] - b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
-                angle = np.abs(radians*180.0/np.pi)
-                if angle > 180:
-                    angle = 360-angle                    
-                angle_degree.append(angle)
-                
-        return angle_degree 
-                 
-def data_plot(data_angles):
-        plt.plot(data_angles)
-        plt.ylabel('angles')
-        plt.savefig('/home/ros/Human-Robot-Imitation/src/mediapipe_holistic_ros/mediapipe_holistic_ros/Angles/hand-angles.png')	
-
 if __name__ == '__main__':
         rospy.init_node('MediaPiPeHolistic')        
       
@@ -186,7 +159,7 @@ if __name__ == '__main__':
                         try:
                                 joint_list = [[8,5,0],[12,9,0],[16,13,0],[20,17,0]]             
                                 hand_landmarks = results.left_hand_landmarks.landmark                                                                 
-                                hand_angles = calculate_angle_hand(hand_landmarks,joint_list)
+                                hand_angles = calUtils.calculate_angle_hand(hand_landmarks,joint_list)
                                 data_set_hand.append(hand_angles)
                                 hand_angles_avg = np.average(data_set_hand,axis = 0)
                                 print('hand angles: ', hand_angles)
@@ -200,9 +173,9 @@ if __name__ == '__main__':
                                 wrist = [pose_landmarks[16].x,pose_landmarks[16].y]
                                 hip = [pose_landmarks[24].x,pose_landmarks[24].y] 
                                 index = [pose_landmarks[20].x,pose_landmarks[20].y]
-                                elbow_angle = calculate_angle_pose(shoulder,elbow,wrist)    
-                                shoulder_angle = calculate_angle_pose(hip,shoulder,elbow)
-                                wrist_angle = calculate_angle_pose(elbow,wrist,index)
+                                elbow_angle = calUtils.calculate_angle_pose(shoulder,elbow,wrist)    
+                                shoulder_angle = calUtils.calculate_angle_pose(hip,shoulder,elbow)
+                                wrist_angle = calUtils.calculate_angle_pose(elbow,wrist,index)
                                 pose_angles = [elbow_angle, shoulder_angle, wrist_angle] 
                                 data_set_pose.append(pose_angles)
                                 print('pose angles: ', pose_angles)           		        	
