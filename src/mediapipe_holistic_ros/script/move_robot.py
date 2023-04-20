@@ -20,7 +20,7 @@ def callback(msg):
     ur_script = rospy.Publisher('/ur_hardware_interface/script_command', String, queue_size=10)
     global pose_angles
     pose_angles = msg.data
-    waypoint = [1.5708, -pose_angles[0], -pose_angles[1] , -1.5708, 1.5708, 0]
+    waypoint = [1.5708, -pose_angles[0], pose_angles[1] , -1.5708, 1.5708, 0]
     command = ur_con.generate_move_j(waypoint)
     ur_script.publish(command)
     #rate.sleep()
