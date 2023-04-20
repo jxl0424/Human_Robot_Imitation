@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+#---------------Import Libraries and msgs---------------:
+from dataclasses import dataclass
+import rospy
+import time
+import numpy as np
+from std_msgs.msg import *
+from geometry_msgs.msg import *
+from tf.transformations import euler_from_quaternion
+from collections import Counter
+from control_lib import UR_Controller
+from sensor_msgs.msg import JointState
+
+ur_con = UR_Controller()
+
+def callback(msg):
+    ur_script = rospy.Publisher('/ur_hardware_interface/script_command', String, queue_size=50)
+    global pose_angles
+    pose_angles = msg.data
+    waypoint = [1.5708, pose_angles[0], pose_angles[1] , pose_angles[2], 1.5708, 0]
+    command = ur_con.generate_move_j(waypoint)
+    ur_script.publish(command)
+    rate.sleep()
+
+
+def listner():
+    print("Robot is starting to imitate")
+    rospy.Subscriber('pose_angles',Float32MultiArray, callback)
+    rate.sleep()
+
+def home_position():
+    ur_script = rospy.Publisher('/ur_hardware_interface/script_command', String, queue_size=50)
+    home_waypoint = [1.5708, 1.5708, 1.5708 , -1.5708, -1.5708, 0]                        #The robot's home waypoint is set as follows
+    command = ur_con.generate_move_j(home_waypoint)                                                 #Generate a command to move the robot to the home position with the help of home waypoint.
+    ur_script.publish(command)  
+    #------------------------Robot home position checking----------------------------------------------------------------------------------------------------------
+    i = 0                                                                                           #i=0 to be used in the loop to check all the joint states
+    tar_reached = False                                                                             #the variable "tar_reached" is given a False input to suggest that the desired/home location is not reached, enable looping                                                                 
+    while not tar_reached:                                                                          #A while loop to check the joints of the robot
+        for i in range(6):                                                                          #Loop through 6 times to check 6 of the robot joints
+            current_pos = rospy.wait_for_message("joint_states", JointState)                        #Subcribe to a node named "joint_states" to get the joint states of each joint to compare to the desired location.
+            rounded_pos = round(current_pos.position[i],3)                                          #Round off the values obtained from the joint_states node to 3 decimal to ease comparison
+            rounded_home = round(home_waypoint[i],3)                                                #Round off the values of the home waypoint to 3 decimal to ease comparison
+            if rounded_pos == rounded_home:                                                         #Compare the rounded joint states and the rounded home waypoint
+                i += 1                                                                              #To add 1 to the counter
+                tar_reached = True     
+    rate.sleep()
+while not rospy.is_shutdown():
+    #---------------Initialise-------------------------------------------------------------------:
+    print("Please Wait While System Starts Up...")
+    rospy.init_node("move_l_example", anonymous=False)
+    rate = rospy.Rate(5)
+    time.sleep(2)
+    print("System Started")
+
+    home_position()
+    print("The robot is now in home position!")                               #To inform the user that the robot is in the home position and ready to start.
+    time.sleep(2) 
+    listner()
+    rospy.spin()
+
+    
+
+
+
