@@ -19,8 +19,9 @@ class UR_Controller():
     def __init__(self):
         self.max_acc = 0.9
         self.max_vel = 0.8
+        self.lookahead_time = 0.05
+        self.gain = 300
 
-		
     def get_pose(self): 
         """ Use TF publisher to get robot pose """
         # Create TF buffer to store last 10 transforms
@@ -104,7 +105,6 @@ class UR_Controller():
         command = header + '\n\tmovel(p{}, a={}, v={}, t=0, r=0)'.format(pose_str, self.max_acc, self.max_vel) + footer
         return command
 
-
     def generate_move_j(self, waypoint, sequence = False, pose_msg = False):
         """ Use waypoint or waypoints list to generate Move L command"""
         header = "def myProg():"
@@ -130,7 +130,24 @@ class UR_Controller():
         command = header + move_msg + footer
         return command
 
+    def generate_servo_j(self, waypoint):
+        """ Use waypoint or waypoints list to generate Move L command"""
+        header = "def myProg():"
+        footer = "\nend"
+        move_msg = ""
+        move_msg ="\nservoj({},{},{})".format(waypoint, self.lookahead_time,self.gain)
+        command = header + move_msg + footer
+        return command
 
+    # def generate_servo_j(self, waypoint):
+    #     """ Use waypoint or waypoints list to generate servo J command"""
+    #     header = "def myProg():"
+    #     footer = "\nend"
+    #     move_msg = ""
+    #     move_msg ="\nservoj(q={},t=0.002,gain ={},lookahead_time={})".format(waypoint, self.gain, self.lookahead_time)
+    #     command = header + move_msg + footer
+    #     return command
+        
     def rotate_tool(self, rx, ry, rz):
         """Function that rotates using tool frame instead of base frame, so we can easily rotate in angles we're familar with"""
         header = "def myProg():"

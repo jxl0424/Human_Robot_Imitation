@@ -120,7 +120,7 @@ def pub_pose_angle(pose_angles):
         pub_pose_array=Float32MultiArray()
         pub_pose_array.data = pose_angles
         publisher_output_pose_angles.publish(pub_pose_array)  
-        rate.sleep()
+       #rate.sleep()
 
 def pub_fingercount(counts):
         finger_count = Int32()
@@ -130,7 +130,7 @@ def pub_fingercount(counts):
 
 if __name__ == '__main__':
         rospy.init_node('MediaPiPeHolistic',anonymous=True)        
-        rate = rospy.Rate(2)
+        rate = rospy.Rate(2.5)
         
         #Global Topics
         bridge = CvBridge()
