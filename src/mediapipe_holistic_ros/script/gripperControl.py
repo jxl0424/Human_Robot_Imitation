@@ -33,10 +33,11 @@ def gripperController(fingerCount):
         pass
 
 rospy.init_node("gripper_control", anonymous=True)
-rate = rospy.Rate(10)
+rate = rospy.Rate(0.25)
 
 if __name__ == '__main__':   
     while not rospy.is_shutdown():       
         print(new_finger_count)
         gripperController(new_finger_count)
         rate.sleep()
+        
