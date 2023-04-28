@@ -115,12 +115,11 @@ def pub_results(results):
                 publisher_output_mediapipe.publish(landmarks) 
 
 
-
 def pub_pose_angle(pose_angles):
         pub_pose_array=Float32MultiArray()
         pub_pose_array.data = pose_angles
         publisher_output_pose_angles.publish(pub_pose_array)  
-       #rate.sleep()
+        #rate.sleep()
 
 def pub_fingercount(counts):
         finger_count = Int32()
@@ -128,10 +127,10 @@ def pub_fingercount(counts):
         publisher_output_fingercount.publish(finger_count) 
         #rate.sleep()      
 
+rospy.init_node('MediaPiPeHolistic',anonymous=False)        
+
 if __name__ == '__main__':
-        rospy.init_node('MediaPiPeHolistic',anonymous=True)        
-        rate = rospy.Rate(2.5)
-        
+     
         #Global Topics
         bridge = CvBridge()
         
@@ -141,8 +140,7 @@ if __name__ == '__main__':
         publisher_output_pose_angles = rospy.Publisher('pose_angles', Float32MultiArray, queue_size=10)
         publisher_output_fingercount = rospy.Publisher ('fingercount', Int32, queue_size=10)
         
-        with mp_holistic.Holistic(enable_segmentation=True,min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
-                data_set_pose = []
+        with mp_holistic.Holistic(model_complexity = 1,enable_segmentation=True,min_detection_confidence=0.5,min_tracking_confidence=0.5) as holistic:
                 while not rospy.is_shutdown():
                         try:
                                 data = rospy.wait_for_message(input_usb_cam_topic, Image, timeout=5)
@@ -173,12 +171,13 @@ if __name__ == '__main__':
                                 wrist = [pose_landmarks[16].x,pose_landmarks[16].y]
                                 hip = [pose_landmarks[24].x,pose_landmarks[24].y] 
                                 index = [pose_landmarks[20].x,pose_landmarks[20].y]
-                                shoulder_angle = 1.5708 -round(calUtils.calculate_angle_pose(hip,shoulder,elbow),4)
-                                elbow_angle = 3.1416 - round(calUtils.calculate_angle_pose(shoulder,elbow,wrist), 4)   
-                                wrist_angle = 3.1416 - round(calUtils.calculate_angle_pose(elbow,wrist,index),4)
-                                pose_angles = [shoulder_angle, elbow_angle, wrist_angle] 
+                                shoulder_angle = 1.5708 -round(calUtils.calculate_angle_pose(hip,shoulder,elbow),3)
+                                elbow_angle = 3.1416 - round(calUtils.calculate_angle_pose(shoulder,elbow,wrist), 3)   
+                                #wrist_angle = 3.1416 - round(calUtils.calculate_angle_pose(elbow,wrist,index),4)
+                                pose_angles = [shoulder_angle, elbow_angle]
+                                # pose_angles = [shoulder_angle, elbow_angle, wrist_angle] 
                                 pub_pose_angle(pose_angles)
-                                
+
                         except:
                                 print("Angle Not Found")   
                   

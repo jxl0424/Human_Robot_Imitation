@@ -17,32 +17,31 @@ from sensor_msgs.msg import JointState
 ur_con = UR_Controller()
 
 def callback(msg):
-    ur_script = rospy.Publisher('/ur_hardware_interface/script_command', String, queue_size=10)
-    global pose_angles
+    ur_script = rospy.Publisher('/ur_hardware_interface/script_command', String, queue_size=1)
     pose_angles = msg.data
-    waypoint = [1.5708, -pose_angles[0], pose_angles[1] , 1.5708, 1.5708, 0]
-    command = ur_con.generate_servo_j(waypoint)
+    waypoint = [1.571, -pose_angles[0], pose_angles[1] , -1.571, -1.571, 0]
+    command = ur_con.generate_move_j(waypoint)
     ur_script.publish(command)
-    #rate.sleep()
 
 def listner():
     print ("Received pose angles, starting to move!")
-    rospy.Subscriber('pose_angles',Float32MultiArray, callback ,queue_size=10,tcp_nodelay=True)
-    rate.sleep()
-    print('done moving!')
+    rospy.Subscriber('pose_angles_throttle',Float32MultiArray, callback ,queue_size=1)
+    #rate.sleep()
+    #print('done moving!')
 
 #---------------Initialise-------------------------------------------------------------------:
 print("Please Wait While System Starts Up...")
-rospy.init_node("move_robot", anonymous=True)
-rate = rospy.Rate(125)
+rospy.init_node("move_robot", anonymous=False)
+#rate = rospy.Rate(1)
+rate = rospy.Rate(1)
+#to use servoj change rate to 125Hz 
 print("System Started")
 
-if __name__ == '__main__':    
+if __name__ == '__main__':   
     while not rospy.is_shutdown():
-    #print('Robot is starting to imitate')
-        listner()    
-        # rospy.spin()
-
+        listner()  
+        rospy.spin()
+        #rate.sleep()
         
 
 

@@ -17,9 +17,9 @@ import tf2_ros
 class UR_Controller():
 
     def __init__(self):
-        self.max_acc = 0.9
-        self.max_vel = 0.8
-        self.lookahead_time = 0.05
+        self.max_acc = 0.6
+        self.max_vel = 0.5
+        self.lookahead_time = 0.2
         self.gain = 300
 
     def get_pose(self): 
@@ -126,7 +126,7 @@ class UR_Controller():
                     move_msg += move
             # Otherwise just send it off
             else:
-                move_msg ="\nmovej({},a={},v={},t={},r={})".format(waypoint, self.max_acc ,self.max_vel,0,0)
+                move_msg ="\nmovej(get_forward_kin({}),a={},v={},t={},r={})".format(waypoint, self.max_acc ,self.max_vel,0,0)
         command = header + move_msg + footer
         return command
 
