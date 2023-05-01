@@ -8,6 +8,8 @@ HOW TO RUN THE CODE:
 
 1. git clone the package.
 
+2. git clone the usb_cam ROS package from the official site into the same folder as the program.
+
 2. roslaunch robot_control_simulation ur_robot_drivers.launch (make sure you change the robot ip in the launch file)
 
 #TO LAUNCH THE CAMERA STREAM WITH MEDIAPIPE#
